@@ -730,9 +730,9 @@ func TestSprites(t *testing.T) {
 		height = 512
 	)
 
-	src := NewImage(4, 4, FilterNearest)
+	src := NewImage(4, 4)
 	src.Fill(color.RGBA{0xff, 0xff, 0xff, 0xff})
-	dst := NewImage(width, height, FilterNearest)
+	dst := NewImage(width, height)
 	for j := 0; j < height/4; j++ {
 		for i := 0; i < width/4; i++ {
 			op := &DrawImageOptions{}
@@ -760,26 +760,26 @@ func TestMipmap(t *testing.T) {
 	}
 	w, h := src.Size()
 
-	l1 := NewImage(w/2, h/2, FilterDefault)
+	l1 := NewImage(w/2, h/2)
 	op := &DrawImageOptions{}
 	op.GeoM.Scale(1/2.0, 1/2.0)
 	op.Filter = FilterLinear
 	l1.DrawImage(src, op)
 
 	l1w, l1h := l1.Size()
-	l2 := NewImage(l1w/2, l1h/2, FilterDefault)
+	l2 := NewImage(l1w/2, l1h/2)
 	op = &DrawImageOptions{}
 	op.GeoM.Scale(1/2.0, 1/2.0)
 	op.Filter = FilterLinear
 	l2.DrawImage(l1, op)
 
-	gotDst := NewImage(w, h, FilterDefault)
+	gotDst := NewImage(w, h)
 	op = &DrawImageOptions{}
 	op.GeoM.Scale(1/5.0, 1/5.0)
 	op.Filter = FilterLinear
 	gotDst.DrawImage(src, op)
 
-	wantDst := NewImage(w, h, FilterDefault)
+	wantDst := NewImage(w, h)
 	op = &DrawImageOptions{}
 	op.GeoM.Scale(4.0/5.0, 4.0/5.0)
 	op.Filter = FilterLinear

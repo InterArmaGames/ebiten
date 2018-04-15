@@ -44,8 +44,6 @@ type Image struct {
 	// shareableImages is a set of shareable.Image sorted by the order of mipmap level.
 	// The level 0 image is a regular image and higher-level images are used for mipmap.
 	shareableImages []*shareable.Image
-
-	filter Filter
 }
 
 func (i *Image) copyCheck() {
@@ -121,7 +119,6 @@ func (i *Image) fill(r, g, b, a uint8) {
 		op.ColorM.Translate(rf, gf, bf, af)
 	}
 	op.CompositeMode = CompositeModeCopy
-	op.Filter = FilterNearest
 	i.DrawImage(emptyImage, op)
 }
 
@@ -207,17 +204,10 @@ func (i *Image) DrawImage(img *Image, options *DrawImageOptions) {
 
 	mode := opengl.CompositeMode(options.CompositeMode)
 
-	filter := graphics.FilterNearest
-	if options.Filter != FilterDefault {
-		filter = graphics.Filter(options.Filter)
-	} else if img.filter != FilterDefault {
-		filter = graphics.Filter(img.filter)
-	}
-
 	a, b, c, d, tx, ty := geom.elements()
 
 	level := 0
-	if filter == graphics.FilterLinear {
+	if graphics.Filter(options.Filter) == graphics.FilterLinear {
 		det := geom.det()
 		if det == 0 {
 			return
@@ -286,7 +276,7 @@ func (i *Image) DrawImage(img *Image, options *DrawImageOptions) {
 		if colorm.ScaleOnly() {
 			colorm = nil
 		}
-		i.shareableImages[0].DrawImage(src, vs, is, colorm, mode, filter)
+		i.shareableImages[0].DrawImage(src, vs, is, colorm, mode, graphics.Filter(options.Filter))
 	}
 	i.disposeMipmaps()
 }
@@ -326,7 +316,7 @@ type DrawTrianglesOptions struct {
 	CompositeMode CompositeMode
 
 	// Filter is a type of texture filter.
-	// The default (zero) value is FilterDefault.
+	// The default (zero) value is FilterNearest.
 	Filter Filter
 }
 
@@ -354,19 +344,12 @@ func (i *Image) DrawTriangles(vertices []Vertex, indices []uint16, img *Image, o
 
 	mode := opengl.CompositeMode(options.CompositeMode)
 
-	filter := graphics.FilterNearest
-	if options.Filter != FilterDefault {
-		filter = graphics.Filter(options.Filter)
-	} else if img.filter != FilterDefault {
-		filter = graphics.Filter(img.filter)
-	}
-
 	vs := []float32{}
 	src := img.shareableImages[0]
 	for _, v := range vertices {
 		vs = append(vs, src.Vertex(float32(v.DstX), float32(v.DstY), v.SrcX, v.SrcY, v.ColorR, v.ColorG, v.ColorB, v.ColorA)...)
 	}
-	i.shareableImages[0].DrawImage(img.shareableImages[0], vs, indices, options.ColorM.impl, mode, filter)
+	i.shareableImages[0].DrawImage(img.shareableImages[0], vs, indices, options.ColorM.impl, mode, graphics.Filter(options.Filter))
 }
 
 // Bounds returns the bounds of the image.
@@ -463,7 +446,7 @@ type DrawImageOptions struct {
 	CompositeMode CompositeMode
 
 	// Filter is a type of texture filter.
-	// The default (zero) value is FilterDefault, which is same as FilterNearest.
+	// The default (zero) value is FilterNearest.
 	Filter Filter
 }
 
@@ -524,7 +507,6 @@ func NewImageFromImage(source image.Image) *Image {
 func newImageWithScreenFramebuffer(width, height int) *Image {
 	i := &Image{
 		shareableImages: []*shareable.Image{shareable.NewScreenFramebufferImage(width, height)},
-		filter:          FilterDefault,
 	}
 	i.addr = i
 	runtime.SetFinalizer(i, (*Image).Dispose)
